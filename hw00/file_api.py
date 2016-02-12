@@ -1,3 +1,4 @@
+# encoding: utf-8
 import struct
 
 class FileIterator:
