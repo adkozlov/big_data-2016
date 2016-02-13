@@ -4,7 +4,7 @@
 ## Подготовка 
 
 Далее в этой инструкции считается, что вашим именем пользователя на git.barashev.net является *student*.
-Сделайте через UI форк репозитория `http://git.barashev.net/user/bigdata-2016-master` и  назовите его, например,
+Сделайте через UI форк репозитория `http://git.barashev.net/user/bigdata-2016-master`, назовите его, например,
 `http://git.barashev.net/student/bigdata-2016-student` и поставьте в его настройках на странице 
 `http://git.barashev.net/student/bigdata-2016-student/edit` visibility level в private
 
@@ -34,4 +34,4 @@
     git checkout task
     git merge master
     
-    
+Когда задание выполнено, не забудьте сделать `git push origin task` и убедиться в UI что все изменения опубликовались.
