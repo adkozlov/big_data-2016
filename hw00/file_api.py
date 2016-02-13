@@ -50,7 +50,7 @@ class ChunkedFile:
         fmt = "<I%dI" % len(int_list)
         data = struct.pack(fmt, int(len(int_list)), *int_list)
         self.stream.write(data)
-        # Если блок заполнен не полностью, мы дополняем его нулями
+        # Если блок заполнен не полностью, мы дополняем его нулями.
         tail_bytes_count = self.chunk_size_kb*1024 - len(int_list)*4 - 4
         tail_int_count = tail_bytes_count // 4
         for b in range(tail_int_count):
