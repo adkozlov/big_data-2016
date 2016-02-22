@@ -1,19 +1,50 @@
 ﻿# Автор: Андрей Кокорев
-# Для использования выполнить команду 
-# powershell -ExecutionPolicy ByPass -File .\demo-dfs.ps1
-# в директории dfs.
+# Пример использования: выполнить команду
+# powershell -ExecutionPolicy ByPass -File .\demo-dfs.ps1 --data "..\hw01\data" --logs "..\hw01\logs" --files "..\hw01\data\files"
+# в директории dfs для запуска мастера и 4 чанк-серверов из 1 домашнего задания
 # Проверено на Windows 8.1 Pro (x64)
+param(
+    [string]$files="./files",
+    [string]$data="./data",
+    [string]$logs="./logs"
+)
 
-echo "Запускаем мастер. Его консольный вывод направлен в файл master.log"
-$master = Start-Process "cmd" -Args "/c", "python server.py --role master --port 8000 > master.log 2>&1" -PassThru -NoNewWindow
+if (!(Test-Path $files)){
+    echo "Файл $files не найден"
+    Exit
+}
+if (!(Test-Path $data)){
+    echo "Директория $data не найдена"
+    Exit
+}
+if (!(Test-Path $logs)){
+    echo "Директория $logs не найдена, создаем"
+    New-Item -ItemType directory -Path $logs
+    echo ""
+}
 
-echo "Запускаем файловый сервер. Его консольный вывод направлен в файл chunkserver.log"
-$chunkserver = Start-Process "cmd" -Args "/c", "python server.py --role chunkserver --port 8001 > chunkserver.log 2>&1" -PassThru -NoNewWindow
+#Получаем список всех под-директорий 
+$dir = dir $data | ?{$_.PSISContainer}
 
-echo "Запустите python demo.py"
-echo "master=$($master.ID) chunk_server=$($chunkserver.ID)"
+echo "Запускаем мастер. Его консольный вывод направлен в файл $logs\master.log"
+$master = Start-Process "cmd" -Args "/c", "python server.py --role master --port 8000 --namespace-filename $files > $logs\master.log 2>&1" -PassThru -NoNewWindow
+echo " master PID: $($master.ID)"
+
+echo "Запускаем файловые серверы. Их консольный вывод направлен в файлы "
+$chunkservers = @()
+$port = 8001
+foreach ($d in $dir){
+    $log = "$logs\cs_$($d.Name).log"
+    $chunkserver = Start-Process "cmd" -Args "/c", "python server.py --role chunkserver --port $port --data-dir $($d.FullName) > $log 2>&1" -PassThru -NoNewWindow
+    $chunkservers += $chunkserver.ID
+    echo " name: $($d.Name), PID: $($chunkserver.ID), port: $port, log: $log"
+    $port += 1
+}
+ 
 echo "Нажмите любую клавишу чтобы остановить DFS... "
 $x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-
 taskkill /PID $master.ID /F /T
-taskkill /PID $chunkserver.ID /F /T
+
+foreach($cs in $chunkservers) {
+    taskkill /PID $cs /F /T     
+}
