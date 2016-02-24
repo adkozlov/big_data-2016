@@ -8,7 +8,9 @@ import requests
 import sys
 from threading import Timer
 
+
 def json2obj(data): return json.JSONDecoder().decode(data)
+
 
 class DFSMaster(object):
     def __init__(self, namespace_filename):
@@ -70,15 +72,18 @@ class DFSMaster(object):
     def get_chunk_locations(self, chunk_id=None):
         if chunk_id is None:
             return json.JSONEncoder().encode([
-                {"id": chunk_id, "chunkserver": chunkserver}
-                for chunk_id, chunkserver in self.chunk_locations.items()
-            ])
+                                                 {"id": chunk_id, "chunkserver": chunkserver}
+                                                 for chunk_id, chunkserver in self.chunk_locations.items()
+                                                 ])
         return json.JSONEncoder().encode(self.chunk_locations[chunk_id])
+
 
 def start_heartbeat(server):
     def closure():
         server.send_heartbeat()
+
     Timer(30, closure, ()).start()
+
 
 class DFSChunkServer(object):
     def __init__(self, data_dir, hostname, port, master_host):
@@ -94,7 +99,7 @@ class DFSChunkServer(object):
             raise cherrypy.HTTPError(500, "ERROR: can't list directory %s: %s" % (self.data_dir, str(e)))
         list.sort(key=lambda a: a.lower())
 
-        r = requests.post(self.register_url, data = {'newbie_chunks': "\n".join(list), 'newbie_id': self.url})
+        r = requests.post(self.register_url, data={'newbie_chunks': "\n".join(list), 'newbie_id': self.url})
         if r.status_code != 200:
             sys.stderr.write("Heartbeat failed: %s" % r.text)
             return False
@@ -112,14 +117,20 @@ class DFSChunkServer(object):
         cherrypy.response.headers["Content-Length"] = str(fs[6])
         return f.read()
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Сервер модели распределенной ФС")
-    parser.add_argument("--role", required = False,  default = 'master', help="Роль сервера: master или chunkserver")
-    parser.add_argument("--port", required = False, default = 8000, help="Порт, который сервер обслуживает (8000 по умолчанию)")
-    parser.add_argument("--namespace-filename", required = False, default="files", help="Для мастера: имя файла с информацией о пространстве имен ('files' по умолчанию)")
-    parser.add_argument("--master", required = False, default="localhost:8000", help="Для chunkserver: хост и порт мастера (localhost:8000 по умолчанию)")
-    parser.add_argument("--self-hostname", required = False, default = '127.0.0.1', help="Для chunkserver: имя или IP хоста, на котором он запущен (127.0.0.1 по умолчанию)")
-    parser.add_argument("--data-dir", required = False, default = "data", help="Для chunkserver: имя каталога, содержащего контент фрагментов файлов ('data' по умолчанию)")
+    parser.add_argument("--role", required=False, default='master', help="Роль сервера: master или chunkserver")
+    parser.add_argument("--port", required=False, default=8000,
+                        help="Порт, который сервер обслуживает (8000 по умолчанию)")
+    parser.add_argument("--namespace-filename", required=False, default="files",
+                        help="Для мастера: имя файла с информацией о пространстве имен ('files' по умолчанию)")
+    parser.add_argument("--master", required=False, default="localhost:8000",
+                        help="Для chunkserver: хост и порт мастера (localhost:8000 по умолчанию)")
+    parser.add_argument("--self-hostname", required=False, default='127.0.0.1',
+                        help="Для chunkserver: имя или IP хоста, на котором он запущен (127.0.0.1 по умолчанию)")
+    parser.add_argument("--data-dir", required=False, default="data",
+                        help="Для chunkserver: имя каталога, содержащего контент фрагментов файлов ('data' по умолчанию)")
     args = parser.parse_args()
 
     cherrypy.config.update({'server.socket_port': int(args.port)})

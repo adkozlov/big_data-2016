@@ -1,6 +1,7 @@
 # encoding: utf8
 import requests
 
+
 class DFSClient(object):
     def __init__(self, master_url):
         self.master_url = master_url
@@ -21,7 +22,7 @@ class DFSClient(object):
 
     def get_chunk_data(self, chunk_server_id, chunk_id):
         r = requests.get("http://%s/read" % chunk_server_id,
-                         params={"chunk_id" : chunk_id})
+                         params={"chunk_id": chunk_id})
         if r.status_code != 200:
             raise Exception("ERROR: can't get chunk %s from chunkserver %s" % (chunk_id, chunk_server_id))
         return r.text
