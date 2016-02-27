@@ -6,6 +6,8 @@ import sys
 import libcount
 import time
 
+from mapinput import FileNameMapInput
+
 parser = argparse.ArgumentParser(description='Считает числа в файле')
 parser.add_argument('--dataset', help='Каталог с шардами', required=True)
 parser.add_argument('--chunk-size', type=int, help='размер блока в килобайтах', default=4)
@@ -26,7 +28,7 @@ def reducefn(k, vs):
 
 s = mincemeat.Server()
 
-s.map_input = mincemeat.FileNameMapInput(args.dataset)
+s.map_input =FileNameMapInput(args.dataset)
 s.mapfn = mapfn
 s.reducefn = reducefn
 

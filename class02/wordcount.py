@@ -2,6 +2,8 @@
 import mincemeat
 import sys
 
+from mapinput import DictMapInput
+
 data = ["Humpty Dumpty sat on a wall",
         "Humpty Dumpty had a great fall",
         "All the King's horses and all the King's men",
@@ -21,9 +23,9 @@ def reducefn(k, vs):
 s = mincemeat.Server()
 
 # The data source can be any dictionary-like object
-s.map_input = mincemeat.DictMapInput(dict(enumerate(data)))
+s.map_input = DictMapInput(dict(enumerate(data)))
 s.mapfn = mapfn
 s.reducefn = reducefn
 
-results = s.run_server(password="") 
+results = s.run_server(password="")
 mincemeat.dump_results(results)
