@@ -1,3 +1,7 @@
+import glob
+import json
+import os
+
 class MapInput:
     def next(self):
         pass
@@ -73,3 +77,28 @@ class FileNameMapInput(MapInput):
             raise StopIteration
         filename = self.filenames.popleft()
         return "%s/%s" % (self.input_dir, filename), ""
+
+class JsonFileMapInput(MapInput):
+    def __init__(self, filename):
+        with open(filename, "r") as f:
+            stored_dict = json.JSONDecoder().decode(f.read())
+            self.iter_items = ((key, stored_dict[key]) for key in stored_dict)
+
+    def next(self):
+        return next(self.iter_items)
+
+class FileShardsMapInput(MapInput):
+    def __init__(self, glob_pattern, shard_input_constructor):
+        self.glob = glob.iglob(glob_pattern)
+        self.shard_iterator = None
+        self.shard_input_constructor = shard_input_constructor
+
+    def next(self):
+        if self.shard_iterator is not None:
+            try:
+                return self.shard_iterator.next()
+            except StopIteration:
+                pass
+        filename = next(self.glob)
+        self.shard_iterator = self.shard_input_constructor(filename)
+        return next(self)

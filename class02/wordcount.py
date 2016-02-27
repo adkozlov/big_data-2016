@@ -2,13 +2,8 @@
 import mincemeat
 import sys
 
-from mapinput import DictMapInput
-
-data = ["Humpty Dumpty sat on a wall",
-        "Humpty Dumpty had a great fall",
-        "All the King's horses and all the King's men",
-        "Couldn't put Humpty together again",
-        ]
+from mapinput import FileShardsMapInput
+from mapinput import JsonFileMapInput
 
 def mapfn(k, v):
     for w in v.split():
@@ -22,8 +17,7 @@ def reducefn(k, vs):
 
 s = mincemeat.Server()
 
-# The data source can be any dictionary-like object
-s.map_input = DictMapInput(dict(enumerate(data)))
+s.map_input = FileShardsMapInput("./*.json", JsonFileMapInput)
 s.mapfn = mapfn
 s.reducefn = reducefn
 
