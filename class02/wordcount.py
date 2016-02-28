@@ -17,9 +17,10 @@ def reducefn(k, vs):
 
 s = mincemeat.Server()
 
-s.map_input = FileShardsMapInput("./*.json", JsonFileMapInput)
+s.map_input = FileShardsMapInput("./wordcount_shard*.json", JsonFileMapInput)
 s.mapfn = mapfn
 s.reducefn = reducefn
-
+s.reduce_output_format = "json"
+s.reduce_shard_pattern = "wordcount_output_%s.json"
 results = s.run_server(password="")
-mincemeat.dump_results(results)
+s.dump_results()

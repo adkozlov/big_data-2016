@@ -35,6 +35,7 @@ import os
 import random
 import socket
 import sys
+import threading
 import types
 
 from collections import deque
@@ -150,6 +151,7 @@ class Client(Protocol):
     def __init__(self):
         Protocol.__init__(self)
         self.mapfn = self.reducefn = self.collectfn = None
+        self.reduce_results = {}
 
     def conn(self, server, port):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -160,7 +162,22 @@ class Client(Protocol):
         pass
 
     def handle_close(self):
+        if self.reduce_results:
+            assert self.reduce_output_format != "send_back"
+            assert self.reduce_shard_pattern is not None
+            assert self.reducer_id is not None
+
+            out_filename = self.reduce_shard_pattern % self.reducer_id
+            print("Writing result of reducer %s to file %s" % (self.reducer_id, out_filename))
+            shard_contents = self.build_reduce_shard_contents()
+            with open(out_filename, "w") as f:
+                f.write(shard_contents)
         self.close()
+
+    def build_reduce_shard_contents(self):
+        if self.reduce_output_format == "json":
+            return json.JSONEncoder().encode(self.reduce_results)
+        assert False, "Reduce output format %s is not supported" % self.reduce_output_format
 
     def set_mapfn(self, command, mapfn):
         self.mapfn = types.FunctionType(marshal.loads(mapfn), globals(), 'mapfn')
@@ -168,8 +185,12 @@ class Client(Protocol):
     def set_collectfn(self, command, collectfn):
         self.collectfn = types.FunctionType(marshal.loads(collectfn), globals(), 'collectfn')
 
-    def set_reducefn(self, command, reducefn):
-        self.reducefn = types.FunctionType(marshal.loads(reducefn), globals(), 'reducefn')
+    def set_reducefn(self, command, reduce_spec_json):
+        reduce_spec = json.JSONDecoder().decode(reduce_spec_json)
+        self.reducefn = types.FunctionType(marshal.loads(reduce_spec['reducefn']), globals(), 'reducefn')
+        self.reduce_output_format = reduce_spec['output']
+        self.reducer_id = reduce_spec['id']
+        self.reduce_shard_pattern = reduce_spec['shard_pattern']
 
     def call_mapfn(self, command, data):
         logging.info("Mapping %s" % str(data[0]))
@@ -186,7 +207,12 @@ class Client(Protocol):
     def call_reducefn(self, command, data):
         logging.info("Reducing %s" % str(data[0].encode('utf-8')))
         results = self.reducefn(data[0], data[1])
-        self.send_command('reducedone', (data[0], results))
+        if self.reduce_output_format == "send_back":
+            self.send_command('reducedone', (data[0], results))
+            return
+        self.reduce_results[data[0]] = results
+        self.send_command('reducedone', (data[0], ""))
+
 
     def process_command(self, command, data=None):
         commands = {
@@ -215,6 +241,10 @@ class Server(asyncore.dispatcher, object):
         self.collectfn = None
         self.map_input = None
         self.password = None
+        self.reduce_output_format = "send_back"
+        self.reduce_shard_pattern = None
+        self.worker_count = 0
+        self.worker_count_lock = threading.Lock()
 
     def run_server(self, password="", port=DEFAULT_PORT):
         self.password = password
@@ -246,12 +276,26 @@ class Server(asyncore.dispatcher, object):
 
     map_input = property(get_map_input, set_map_input)
 
+    def inc_worker_count(self):
+        with self.worker_count_lock:
+            self.worker_count += 1
+            return self.worker_count
+
+    def dump_results(self):
+        if self.reduce_output_format != "send_back":
+            print "Reducers were configured to save their output to %s. Search for files named %s in the reducer file systems" % (self.reduce_output_format, self.reduce_shard_pattern)
+            return
+
+        results = self.taskmanager.results
+        keys = results.keys()
+        keys.sort()
+        for key in keys:
+            print key + "\t" + str(results[key])
 
 class ServerChannel(Protocol):
     def __init__(self, conn, server):
         Protocol.__init__(self, conn)
         self.server = server
-
         self.start_auth()
 
     def handle_close(self):
@@ -287,10 +331,16 @@ class ServerChannel(Protocol):
             Protocol.process_command(self, command, data)
 
     def post_auth_init(self):
+        worker_id = self.server.inc_worker_count()
         if self.server.mapfn:
             self.send_command('mapfn', marshal.dumps(self.server.mapfn.func_code))
         if self.server.reducefn:
-            self.send_command('reducefn', marshal.dumps(self.server.reducefn.func_code))
+            reduce_spec = {}
+            reduce_spec['reducefn'] = marshal.dumps(self.server.reducefn.func_code)
+            reduce_spec['output'] = self.server.reduce_output_format
+            reduce_spec['shard_pattern'] = self.server.reduce_shard_pattern
+            reduce_spec['id'] = worker_id
+            self.send_command('reducefn', json.JSONEncoder().encode(reduce_spec))
         if self.server.collectfn:
             self.send_command('collectfn', marshal.dumps(self.server.collectfn.func_code))
         self.start_new_task()
@@ -354,8 +404,8 @@ class TaskManager:
         # Don't use the results if they've already been counted
         if not data[0] in self.working_reduces:
             return
-
-        self.results[data[0]] = data[1]
+        if self.server.reduce_output_format == "send_back":
+            self.results[data[0]] = data[1]
         del self.working_reduces[data[0]]
 
 def run_client():
@@ -379,9 +429,3 @@ def run_client():
 
 if __name__ == '__main__':
     run_client()
-
-def dump_results(results):
-    keys = results.keys()
-    keys.sort()
-    for key in keys:
-        print key + "\t" + str(results[key])
