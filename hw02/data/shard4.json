@@ -1,0 +1,10 @@
+[
+  {
+    "DocID": "42",
+    "Users": ["Merry Dorothy", "Happy Alice"]
+  },
+  {
+    "DocID": "777",
+    "Users": ["Merry Dorothy", "Sad Cathy"]
+  }
+]

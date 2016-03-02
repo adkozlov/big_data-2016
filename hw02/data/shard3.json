@@ -1,0 +1,14 @@
+[
+  {
+    "DocID": "12345",
+    "Users": ["Sad Cathy", "Awkward Bob"]
+  },
+  {
+    "DocID": "54321",
+    "Users": ["Awkward Bob"]
+  },
+  {
+    "DocID": "9999",
+    "Users": ["Happy Alice", "Hungry Emma"]
+  }
+]
