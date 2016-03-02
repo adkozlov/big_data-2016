@@ -2,6 +2,7 @@ package main
 
 import (
   "bytes"
+  "crypto/rand"
   "encoding/json"
   "flag"
 	"fmt"
@@ -44,13 +45,19 @@ type ReducerOutput struct {
 }
 
 func createStreamingReducer(reducerExe string) ReducerFunc {
+  b := make([]byte, 8)
+	if _, err := rand.Read(b); err != nil {
+    panic(fmt.Sprintf("Failed to generate reducer id: %v", err))
+  }
+  reducerId := fmt.Sprintf("%x%x", b[0:4], b[4:8])
+  fmt.Printf("reducer id=%v", reducerId)
   return func(key interface{}, values interface {}) string {
     inputBytes, err := json.Marshal(values)
     if err != nil {
       panic(fmt.Sprintf("%v", err))
     }
 
-    cmd := exec.Command(reducerExe, fmt.Sprintf("%v", key))
+    cmd := exec.Command(reducerExe, fmt.Sprintf("%v", key), reducerId)
     var outBuffer, errBuffer bytes.Buffer
     cmd.Stdout = &outBuffer
     cmd.Stderr = &errBuffer
@@ -86,10 +93,10 @@ func createStreamingReducer(reducerExe string) ReducerFunc {
 }
 
 func main() {
-  var shardFile = flag.String("shard-file", "", "File listing input shard files")
-  var numShards = flag.Int("num-shards", 1, "The number of shards input should be partition to")
-  var mapper = flag.String("mapper", "", "Executable mapper script")
-  var reducer = flag.String("reducer", "", "Executable reducer script")
+  var shardFile = flag.String("shard-file", "", "Файл-каталог")
+  var numShards = flag.Int("num-splits", 1, "На сколько частей разделить входные шарды")
+  var mapper = flag.String("mapper", "", "Выполняемый скрипт с функцией map")
+  var reducer = flag.String("reducer", "", "Выполняемый скрипт с функцией reduce")
   flag.Parse()
 
   f := flow.New()
