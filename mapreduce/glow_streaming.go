@@ -78,6 +78,9 @@ func createStreamingReducer(reducerExe string) ReducerFunc {
       panic(fmt.Sprintf("%v", err))
     }
 
+    if len(outBuffer.Bytes()) == 0 {
+      return ""
+    }
     var reducerIface interface{}
     if err := json.Unmarshal(outBuffer.Bytes(), &reducerIface); err != nil {
       panic(fmt.Sprintf("%v", err))
@@ -104,7 +107,10 @@ func main() {
   reducerFunc := createStreamingReducer(*reducer)
   f.TextFile(*shardFile, *numShards).Map(mapperFunc).GroupByKey().Map(
     func(key interface{}, values interface {}) {
-      fmt.Printf(reducerFunc(key, values))
+      reducedValue := reducerFunc(key, values)
+      if reducedValue != "" {
+        fmt.Printf(reducedValue)
+      }
   	})
   f.Run()
 }
