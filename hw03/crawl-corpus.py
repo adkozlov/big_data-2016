@@ -32,7 +32,7 @@ def crawl(category, dir):
 				page_record["ID"] = counter
 				page_record["Title"] = page.name
 				page_record["Authors"] = get_authors(page)
-				page_record["Body"] = mwparser.parse(page.text()).strip_code().encode('utf-8')
+				page_record["Body"] = mwparser.parse(page.text()).strip_code()
 				f.write(encoder.encode(page_record))
 			toc.write("%s\n" % page_filename)
 			counter += 1
