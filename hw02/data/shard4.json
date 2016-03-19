@@ -6,5 +6,9 @@
   {
     "DocID": "777",
     "Users": ["Merry Dorothy", "Sad Cathy"]
+  },
+  {
+    "DocID": "wqer",
+    "Users": ["Awkward Bob", "Hungry Emma", "Pretty Peggy"]
   }
 ]
