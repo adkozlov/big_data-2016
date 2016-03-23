@@ -1,27 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
-from __future__ import print_function
+from json import JSONDecoder, JSONEncoder
+from string import punctuation
+from sys import argv
 
-import json
-import sys
+
+def tokenize(s):
+    return "".join(c for c in s.lower() if c not in punctuation).split()
 
 if __name__ == '__main__':
-    # Имя файла - шарда передаётся в первом аргументе
-    shard = sys.argv[1]
+    with open(argv[1], "r") as file:
+        shard = JSONDecoder().decode(file.read())
 
-    # Маппер читает шард паука как JSON объект.
-    # В соответствии с протоколом маппер выплевывает JSON-объект, являющийся массивом
-    # Массив состоит из JSON объектов, в каждом из которых есть поля
-    # Key -- ключ свертки, в данном случае слово из текста
-    # Value -- в общем случае произвольный JSON объект, передающийся задачам свертки
-    # Данный маппер в качестве Value выплевывает номера документов
-    with open(shard, "r") as f:
-        page = json.JSONDecoder().decode(f.read())
-        output_values = []
-        output_values += [{"Key": v, "Value": page["ID"]} for v in page["Authors"]]
-        output_values += [{"Key": v, "Value": page["ID"]} for v in page["Title"].split()]
-        lines = page["Body"].split("\\n")
-        body_words = (w for line in lines for w in line.split())
-        output_values += [{"Key": v, "Value": page["ID"]} for v in body_words]
+        def map_terms(kind):
+            def mapper(term):
+                return {"Key": term, "Value": {"id": shard["ID"], "kind": kind}}
 
-        print(json.JSONEncoder().encode(output_values))
+            item = shard[kind]
+            string = item if isinstance(item, str) else " ".join(item)
+            return list(map(mapper, tokenize(string)))
+
+        print(JSONEncoder().encode(map_terms("Authors") + map_terms("Title") + map_terms("Body")))
