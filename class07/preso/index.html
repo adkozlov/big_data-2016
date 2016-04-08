@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Транзакции в распределенных системах</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Транзакции</h1>
+					<h3>в распределенных системах</h3>
+					<p>
+						<small><a href="http://rystsov.info">Денис Рысцов</a> / <a href="http://twitter.com/rystsov">@rystsov</a></small>
+					</p>
+					<p>
+						<small>Мат-Мех → Yandex → Grid Dynamics → Amazon</small>
+					</p>
+				</section>
+
+				<section>
+					<h2>Сегодня в программе</h2>
+					<ul>
+						<li>Распределенные системы (Big Data, Reliability)</li>
+						<li>Проблемы согласованности:
+							<ul>
+								<li>в распределенных системах (CAP)</li>
+								<li>в базах данных (ACID)</li>
+							</ul>
+						</li>
+						<li>Транзакции</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Распределенные транзакции</h2>
+					<ul>
+						<li>Sagas (1987)</li>
+						<li>Percolator (2010)</li>
+						<li>RAMP (2014)</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Что такое распределенная система?</h2>
+					<img src="imgs/distsys.png"/>
+				</section>
+
+				<section>
+					<h2>Примеры систем</h2>
+					<ul>
+						<li>Web-сайты после 2005 г.</li>
+						<li>Торренты</li>
+						<li>Bitcoin</li>
+						<li>NoSQL базы данных</li>
+					</ul>
+				</section>
+
+				<section>
+					<section>
+						<h2>Зачем нужны распределенные системы?</h2>
+						<p class="fragment">Существуют задачи, которые по другому не решаются</p>
+					</section>
+					<section>
+						<h2>Примеры</h2>
+						<ul>
+							<li>Слишком много данных (Amazon EBS 16TB)</li>
+							<li class="fragment">Слишком много клиентов (DO 3000 msg/s по 10KB)</li>
+							<li class="fragment">Надежность системы ограничена надежностью платформы, на которой она работает (молнии, уборщицы, экскаваторы)</li>
+						</ul>
+					</section>
+				</section>
+
+				<section>
+					<h2>Основная проблема распр. систем</h2>
+					<p>Отсутствие единой картины мира</p>
+				</section>
+
+				<section>
+					<h2>Виды согласованности</h2>
+					<ul>
+						<li>Атомарность (при шардиновании)</li>
+						<li>Линеаризуемость (при репликации)</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Отсутствие согласованности называется eventual consistency</h2>
+				</section>
+
+				<section>
+					<h2>Виды несогласованности</h2>
+					<ul>
+						<li>Sequential consistency</li>
+						<li>Causal consistency</li>
+						<li>Monotonic Reads</li>
+						<li>Read My Writes</li>
+						<li>и другие</li>
+					</ul>
+					<p><a href="http://research.microsoft.com/pubs/157411/ConsistencyAndBaseballReport.pdf">Replicated Data Consistency Explained Through Baseball</a></p>
+				</section>
+
+				<section>
+					<h2>Несогласованность опасна</h2>
+					<ul>
+						<li>Flexcoin (2014, 0.5MM lost)</li>
+						<li>Poloniex (12% BTC lost)</li>
+						<li>Facebook, накрутка ревью (bounty $3000)</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Как достичь линеаризуемости?</h2>
+					<ul>
+						<li>не реплицировать</li>
+						<li>использовать:<ul>
+							<li>протоколы консенсуса (Raft, Paxos)</li>
+							<li>синхронную репликацию (MySQL)</li>
+							<li>одного писателя и кворумную репликацию (Cassandra)</li>
+						</ul></li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Проблемы согласованности есть не только в распределенных системах, но и в классических базах данных</h2>
+				</section>
+
+				<section data-background="imgs/tx-seq.png">
+				</section>
+
+				<section>
+					<h2>Какая проблема с последовательным применением обновлений?</h2>
+					<h3 class="fragment">Производительность</h3>
+				</section>
+
+				<section>
+					<h2>Обновления в базах данных</h2>
+					<ul>
+						<li>запись в WAL</li>
+						<li>поиск в B-дереве</li>
+						<li>изменение данных</li>
+						<li>перестройка индексов</li>
+					</ul>
+				</section>
+
+				<section data-background="imgs/tx-par.png">
+				</section>
+
+				<section>
+					<h2>Уровни изоляции</h2>
+					<ul>
+						<li>serializable / serializable snapshot isolation</li>
+						<li>repeatable read / snapshot isolation</li>
+						<li>read committed</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Аномалии согласованности</h2>
+					<ul>
+						<li>lost updates</li>
+						<li>read skew</li>
+						<li>write skew</li>
+					</ul>
+				</section>
+
+				<section data-background="imgs/lost-update.png">
+				</section>
+
+				<section data-background="imgs/read-skew.png">
+				</section>
+
+				<section data-background="imgs/write-skew.png">
+				</section>
+
+				<section>
+					<h2>Не все так плохо</h2>
+					<ul>
+						<li>не во всех приложениях есть сценарии, на которых заметны read/write skew аномалии</li>
+						<li>иногда lost update аномалии объяснимы с точки зрения пользователя</li>
+						<li>наблюдаемые аномалии могут не приносить ущерб для бизнеса</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Транзакции в распределенных системах</h2>
+					<ul>
+						<li>не рассматриваем транзакции в реплицированных системах</li>
+						<li>от шарда ожидаем линеаризуемость</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Сага транзакции</h2>
+					<table>
+						<tbody>
+							<tr>
+								<td>Статья</td>
+								<td><a href="https://www.cs.cornell.edu/andru/cs711/2002fa/reading/sagas.pdf">Sagas</a> (1987)</td>
+							</tr>
+							<tr>
+								<td>Изоляция</td>
+								<td>Serializable</td>
+							</tr>
+							<tr>
+								<td>Отзывчивость</td>
+								<td>1RT</td>
+							</tr>
+							<tr>
+								<td>Длительность</td>
+								<td>2.5RT</td>
+							</tr>
+							<tr>
+								<td>Поддерживается</td>
+								<td>сервером</td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section data-background="imgs/saga-topo.png">
+				</section>
+
+				<section data-background="imgs/saga-seq.png">
+				</section>
+
+				<section>
+					<h2>Percolator транзакции</h2>
+					<table>
+						<tbody>
+							<tr>
+								<td>Статья</td>
+								<td><a href="http://research.google.com/pubs/pub36726.html">Large-scale Incremental Processing Using Distributed Transactions and Notifications</a> (2010)</td>
+							</tr>
+							<tr>
+								<td>Изоляция</td>
+								<td>Serializable</td>
+							</tr>
+							<tr>
+								<td>Длительность</td>
+								<td>4RT</td>
+							</tr>
+							<tr>
+								<td>Поддерживается</td>
+								<td>клиентом</td>
+							</tr>
+							<tr>
+								<td>Применения</td>
+								<td><a href="https://aws.amazon.com/blogs/aws/dynamodb-transaction-library/">Transaction Library for DynamoDB</a>, <a href="https://www.cockroachlabs.com/blog/how-cockroachdb-distributes-atomic-transactions/">How CockroachDB Does Distributed, Atomic Transactions</a></td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+
+				<section data-background="imgs/perc-topo.png">
+				</section>
+
+				<section data-background="imgs/perc-seq.png">
+				</section>
+				
+				<section>
+					<h2>RAMP транзакции</h2>
+					<table>
+						<tbody>
+							<tr>
+								<td>Статья</td>
+								<td><a href="http://www.bailis.org/papers/ramp-sigmod2014.pdf">Scalable Atomic Visibility with RAMP Transactions</a> (2014)</td>
+							</tr>
+							<tr>
+								<td>Изоляция</td>
+								<td>Read Committed</td>
+							</tr>
+							<tr>
+								<td>Длительность</td>
+								<td>3RT</td>
+							</tr>
+							<tr>
+								<td>Поддерживается</td>
+								<td>сервером</td>
+							</tr>
+							<tr>
+								<td>Применения</td>
+								<td><a href="http://www.infoq.com/news/2014/06/facebook-apollo">Facebook Apollo</a></td>
+							</tr>
+						</tbody>
+					</table>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
